@@ -4,69 +4,98 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HTML → Vídeo</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--bg:#0c0c0f;--sur:#131317;--bdr:#1e1e26;--acc:#5b6ef5;--ac2:#a78bfa;--txt:#e8e8f0;--mut:#555570;--ok:#34d399;--warn:#fbbf24}
-body{background:var(--bg);color:var(--txt);font-family:'Syne',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:36px 20px 60px;gap:24px}
+:root{
+  --bg:#0c0c0f;--sur:#131317;--bdr:#1e1e26;
+  --acc:#5b6ef5;--ac2:#a78bfa;--txt:#e8e8f0;
+  --mut:#555570;--ok:#34d399;--warn:#fbbf24
+}
+body{background:var(--bg);color:var(--txt);font-family:'Syne',sans-serif;
+  min-height:100vh;display:flex;flex-direction:column;
+  align-items:center;padding:36px 20px 60px;gap:24px}
 .hdr{text-align:center;max-width:560px}
-.hdr h1{font-size:clamp(24px,4.5vw,38px);font-weight:800;letter-spacing:-.04em;background:linear-gradient(135deg,#fff 30%,var(--ac2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hdr h1{font-size:clamp(24px,4.5vw,38px);font-weight:800;letter-spacing:-.04em;
+  background:linear-gradient(135deg,#fff 30%,var(--ac2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .hdr p{margin-top:8px;color:var(--mut);font-size:13px;line-height:1.6}
 .main{display:grid;grid-template-columns:1fr 1fr;gap:18px;width:100%;max-width:1060px}
 @media(max-width:760px){.main{grid-template-columns:1fr}}
-.panel{background:var(--sur);border:1px solid var(--bdr);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:13px}
-.pt{font-size:10px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--mut);display:flex;align-items:center;gap:7px}
+.panel{background:var(--sur);border:1px solid var(--bdr);border-radius:12px;
+  padding:20px;display:flex;flex-direction:column;gap:13px}
+.pt{font-size:10px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;
+  color:var(--mut);display:flex;align-items:center;gap:7px}
 .pt::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--acc)}
-textarea{width:100%;height:250px;background:#0a0a0d;border:1px solid var(--bdr);border-radius:7px;color:var(--txt);font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.6;padding:11px;resize:vertical;outline:none;transition:border-color .2s}
+textarea{width:100%;height:250px;background:#0a0a0d;border:1px solid var(--bdr);
+  border-radius:7px;color:var(--txt);font-family:'JetBrains Mono',monospace;
+  font-size:11px;line-height:1.6;padding:11px;resize:vertical;outline:none;transition:border-color .2s}
 textarea:focus{border-color:var(--acc)}
 .cr{display:flex;gap:9px}
 .cg{flex:1;display:flex;flex-direction:column;gap:4px}
 .cg label{font-size:11px;font-weight:700;color:var(--mut);display:flex;justify-content:space-between}
 .cg input[type=range]{width:100%;accent-color:var(--acc);cursor:pointer}
-.cg select{width:100%;background:#0a0a0d;border:1px solid var(--bdr);border-radius:7px;color:var(--txt);font-family:'JetBrains Mono',monospace;font-size:11px;padding:7px 10px;outline:none}
+.cg select{width:100%;background:#0a0a0d;border:1px solid var(--bdr);border-radius:7px;
+  color:var(--txt);font-family:'JetBrains Mono',monospace;font-size:11px;padding:7px 10px;outline:none}
 .v{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ac2)}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px 20px;border-radius:7px;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer;border:none;transition:all .2s;width:100%}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  padding:10px 20px;border-radius:7px;font-family:'Syne',sans-serif;
+  font-weight:700;font-size:13px;cursor:pointer;border:none;transition:all .2s;width:100%}
 .bp{background:var(--acc);color:#fff}
 .bp:hover:not(:disabled){background:#6c7ff5;transform:translateY(-1px)}
 .bp:disabled{opacity:.4;cursor:not-allowed;transform:none}
 .bk{background:var(--ok);color:#072}
 .bk:hover{background:#4ae3a8;transform:translateY(-1px)}
 
-/* Preview box */
+/* Preview */
 .pbox{position:relative;background:#000;border-radius:10px;overflow:hidden;width:100%;aspect-ratio:1}
-/* A janela de preview onde o HTML renderiza */
-#render-area{position:absolute;inset:0;overflow:hidden}
-/* Canvas que fica em cima para captura */
-#cap-canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:0}
+#preview-iframe{position:absolute;border:none;transform-origin:center center}
+#rec-canvas{display:none}
 
-.ov{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:rgba(12,12,15,.88);backdrop-filter:blur(4px);z-index:20}
+.ov{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:10px;background:rgba(12,12,15,.88);
+  backdrop-filter:blur(4px);z-index:20}
 .ov.h{display:none}
-.ov p{font-size:12px;color:var(--mut);font-family:'JetBrains Mono',monospace;text-align:center;padding:0 14px}
+.ov p{font-size:12px;color:var(--mut);font-family:'JetBrains Mono',monospace;
+  text-align:center;padding:0 14px}
 
 .pgw{width:100%;background:var(--bdr);border-radius:999px;height:7px;overflow:hidden}
-.pgf{height:100%;background:linear-gradient(90deg,var(--acc),var(--ac2));border-radius:999px;transition:width .15s linear;width:0%}
-.slog{background:#0a0a0d;border:1px solid var(--bdr);border-radius:7px;padding:10px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--mut);line-height:1.8;min-height:80px;max-height:130px;overflow-y:auto}
+.pgf{height:100%;background:linear-gradient(90deg,var(--acc),var(--ac2));
+  border-radius:999px;transition:width .2s linear;width:0%}
+.slog{background:#0a0a0d;border:1px solid var(--bdr);border-radius:7px;
+  padding:10px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;
+  color:var(--mut);line-height:1.8;min-height:80px;max-height:130px;overflow-y:auto}
 .ok{color:var(--ok)}.w{color:var(--warn)}.i{color:var(--ac2)}
-.da{display:flex;flex-direction:column;align-items:center;gap:10px;padding:16px;border:1px dashed var(--ok);border-radius:10px;text-align:center}
+.da{display:flex;flex-direction:column;align-items:center;gap:10px;
+  padding:16px;border:1px dashed var(--ok);border-radius:10px;text-align:center}
 .da.h{display:none}
 .da p{font-size:11px;color:var(--mut);font-family:'JetBrains Mono',monospace}
-.spin{width:30px;height:30px;border:3px solid var(--bdr);border-top-color:var(--acc);border-radius:50%;animation:sp .8s linear infinite}
+.spin{width:30px;height:30px;border:3px solid var(--bdr);
+  border-top-color:var(--acc);border-radius:50%;animation:sp .8s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
-.ib{background:rgba(91,110,245,.08);border:1px solid rgba(91,110,245,.2);border-radius:8px;padding:10px 13px;font-size:11px;color:var(--ac2);line-height:1.7;font-family:'JetBrains Mono',monospace}
+.ib{background:rgba(91,110,245,.08);border:1px solid rgba(91,110,245,.2);
+  border-radius:8px;padding:10px 13px;font-size:11px;color:var(--ac2);
+  line-height:1.7;font-family:'JetBrains Mono',monospace}
 .ib b{color:#fff}
-.tbadge{background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.25);border-radius:6px;padding:8px 14px;font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--ok);font-weight:700;letter-spacing:.05em;min-width:120px;text-align:center}
+.tbadge{background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.25);
+  border-radius:6px;padding:8px 14px;font-family:'JetBrains Mono',monospace;
+  font-size:15px;color:var(--ok);font-weight:700;letter-spacing:.05em;
+  min-width:130px;text-align:center}
+.fps-badge{font-family:'JetBrains Mono',monospace;font-size:10px;
+  color:var(--mut);text-align:center}
 </style>
 </head>
 <body>
 
 <div class="hdr">
   <h1>HTML → Vídeo</h1>
-  <p>Renderiza o HTML na página, captura via <code>captureStream()</code> em tempo real. 20s de animação = 20s de vídeo.</p>
+  <p>Captura em tempo real com html2canvas. A duração do vídeo é controlada pelo timer — não pela velocidade de captura.</p>
 </div>
 
 <div class="main">
 
-  <!-- ESQUERDA: controles -->
+  <!-- ESQUERDA -->
   <div class="panel">
     <div class="pt">Configuração</div>
 
@@ -81,8 +110,8 @@ textarea:focus{border-color:var(--acc)}
         <input type="range" id="dur" min="2" max="120" value="8" step="1">
       </div>
       <div class="cg">
-        <label>FPS <span class="v" id="fv">30</span></label>
-        <input type="range" id="fps" min="15" max="60" value="30" step="5">
+        <label>FPS saída <span class="v" id="fv">30</span></label>
+        <input type="range" id="fps" min="10" max="60" value="30" step="5">
       </div>
     </div>
 
@@ -90,7 +119,7 @@ textarea:focus{border-color:var(--acc)}
       <div class="cg">
         <label>Resolução</label>
         <select id="res">
-          <option value="360">360×360</option>
+          <option value="360">360×360 (mais rápido)</option>
           <option value="540" selected>540×540</option>
           <option value="720">720×720</option>
         </select>
@@ -105,6 +134,12 @@ textarea:focus{border-color:var(--acc)}
       </div>
     </div>
 
+    <div class="ib" style="background:rgba(251,191,36,.06);border-color:rgba(251,191,36,.2);color:var(--warn)">
+      <b>⏱ Quanto demora o processo?</b><br>
+      O timer conta o tempo real. A gravação de 8s leva 8s.<br>
+      O FPS real pode ser menor que o configurado dependendo da máquina, mas a <b>duração sempre será exata</b>.
+    </div>
+
     <div style="display:flex;gap:8px;flex-direction:column">
       <button class="btn bp" id="bpv">👁 Pré-visualizar</button>
       <button class="btn bp" id="brec" disabled>⏺ Gravar Vídeo</button>
@@ -115,73 +150,68 @@ textarea:focus{border-color:var(--acc)}
     <div class="da h" id="da">
       <div style="font-size:15px">✅ Vídeo pronto!</div>
       <a class="btn bk" id="dl" style="text-decoration:none">⬇ Baixar .webm</a>
-      <p>Para .mp4: use HandBrake ou ffmpeg -i entrada.webm saída.mp4</p>
+      <p>Para .mp4: HandBrake ou <code>ffmpeg -i entrada.webm saida.mp4</code></p>
     </div>
   </div>
 
-  <!-- DIREITA: preview -->
+  <!-- DIREITA -->
   <div class="panel">
     <div class="pt">Preview</div>
 
     <div class="pbox" id="pw">
-      <!-- Área de renderização do HTML injetado -->
-      <div id="render-area"></div>
-      <!-- Canvas oculto usado para captura -->
-      <canvas id="cap-canvas"></canvas>
+      <iframe id="preview-iframe" sandbox="allow-scripts allow-same-origin"></iframe>
+      <canvas id="rec-canvas"></canvas>
 
-      <!-- Overlay inicial -->
       <div class="ov" id="ov0">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3">
+          <polygon points="5 3 19 12 5 21 5 3"/>
+        </svg>
         <p>Cole um HTML e clique em Pré-visualizar</p>
       </div>
 
-      <!-- Overlay gravando -->
       <div class="ov h" id="ov1">
         <div class="spin"></div>
         <p id="rst" style="color:#fff;font-weight:700;font-size:14px">Gravando...</p>
-        <div class="pgw" style="width:200px"><div class="pgf" id="pgf"></div></div>
-        <div class="tbadge" id="tc">0s / 8s</div>
-        <p id="rdet" style="font-size:10px">Capturando em tempo real</p>
+        <div class="pgw" style="width:210px"><div class="pgf" id="pgf"></div></div>
+        <div class="tbadge" id="tc">0.0s / 8s</div>
+        <p class="fps-badge" id="fpsbadge">— fps capturados</p>
       </div>
     </div>
 
     <div class="ib">
-      <b>✅ Captura em tempo real:</b><br>
-      O HTML é renderizado aqui mesmo na página.<br>
-      O canvas captura via <code>captureStream(fps)</code>.<br>
-      20s de animação → 20s de vídeo, sem distorção.
-    </div>
-
-    <div class="ib" style="background:rgba(251,191,36,.06);border-color:rgba(251,191,36,.25);color:var(--warn)">
-      <b>⚠ Durante a gravação:</b> a página fica ocupada pelo processo. Não feche nem mude de aba.
+      <b>Como funciona agora:</b><br>
+      1. iframe renderiza o HTML em tamanho real<br>
+      2. html2canvas tira screenshots em loop contínuo<br>
+      3. Cada screenshot vai pro canvas → MediaRecorder<br>
+      4. Timer de <code>durSec</code> segundos para a gravação<br>
+      → Duração exata, independente da velocidade de captura
     </div>
   </div>
 
 </div>
 
 <script>
-// ── Elementos ────────────────────────────────────────────
-const hiEl   = document.getElementById('hi');
-const durEl  = document.getElementById('dur');
-const fpsEl  = document.getElementById('fps');
-const resEl  = document.getElementById('res');
-const qualEl = document.getElementById('qual');
-const dvEl   = document.getElementById('dv');
-const fvEl   = document.getElementById('fv');
-const bpvEl  = document.getElementById('bpv');
-const brecEl = document.getElementById('brec');
-const pw     = document.getElementById('pw');
-const ra     = document.getElementById('render-area'); // render area
-const cc     = document.getElementById('cap-canvas');  // capture canvas
-const ov0    = document.getElementById('ov0');
-const ov1    = document.getElementById('ov1');
-const rstEl  = document.getElementById('rst');
-const rdetEl = document.getElementById('rdet');
-const pgfEl  = document.getElementById('pgf');
-const tcEl   = document.getElementById('tc');
-const logEl  = document.getElementById('log');
-const daEl   = document.getElementById('da');
-const dlEl   = document.getElementById('dl');
+const hiEl    = document.getElementById('hi');
+const durEl   = document.getElementById('dur');
+const fpsEl   = document.getElementById('fps');
+const resEl   = document.getElementById('res');
+const qualEl  = document.getElementById('qual');
+const dvEl    = document.getElementById('dv');
+const fvEl    = document.getElementById('fv');
+const bpvEl   = document.getElementById('bpv');
+const brecEl  = document.getElementById('brec');
+const pw      = document.getElementById('pw');
+const previewIf = document.getElementById('preview-iframe');
+const recCv   = document.getElementById('rec-canvas');
+const ov0     = document.getElementById('ov0');
+const ov1     = document.getElementById('ov1');
+const rstEl   = document.getElementById('rst');
+const pgfEl   = document.getElementById('pgf');
+const tcEl    = document.getElementById('tc');
+const fpsBadge= document.getElementById('fpsbadge');
+const logEl   = document.getElementById('log');
+const daEl    = document.getElementById('da');
+const dlEl    = document.getElementById('dl');
 
 durEl.oninput = () => dvEl.textContent = durEl.value + 's';
 fpsEl.oninput = () => fvEl.textContent = fpsEl.value;
@@ -193,73 +223,32 @@ function addLog(msg, cls='') {
 }
 function clearLog() { logEl.innerHTML = ''; }
 
-// Injeta HTML no render-area como shadow DOM para isolamento
-function injectHTML(html, targetDiv) {
-  // Limpa
-  targetDiv.innerHTML = '';
-
-  // Cria um shadow root para isolar estilos
-  let shadow;
-  try {
-    shadow = targetDiv.attachShadow({ mode: 'open' });
-  } catch(e) {
-    // Se já tem shadow, usa o existente ou innerHTML simples
-    targetDiv.innerHTML = html;
-    return targetDiv;
-  }
-
-  // Insere o HTML no shadow
-  const wrapper = document.createElement('div');
-  wrapper.style.cssText = 'width:100%;height:100%;position:relative;overflow:hidden';
-  shadow.appendChild(wrapper);
-
-  // Parse e injeta
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(html, 'text/html');
-
-  // Copia estilos
-  doc.querySelectorAll('style,link[rel=stylesheet]').forEach(el => {
-    shadow.appendChild(el.cloneNode(true));
-  });
-
-  // Copia body content
-  wrapper.innerHTML = doc.body.innerHTML;
-
-  // Re-executa scripts
-  wrapper.querySelectorAll('script').forEach(old => {
-    const s = document.createElement('script');
-    s.textContent = old.textContent;
-    old.parentNode.replaceChild(s, old);
-  });
-
-  return shadow;
+function scaleIframe(r) {
+  const w = pw.offsetWidth;
+  previewIf.style.width  = r + 'px';
+  previewIf.style.height = r + 'px';
+  previewIf.style.transform = `scale(${w / r})`;
 }
 
-// Escala o render-area para caber no preview box
-function setupRenderArea(r) {
-  const boxW = pw.offsetWidth;
-  const scale = boxW / r;
-  ra.style.cssText = `
-    position:absolute; top:50%; left:50%;
-    width:${r}px; height:${r}px;
-    transform:translate(-50%,-50%) scale(${scale});
-    transform-origin:center center;
-    overflow:hidden;
-  `;
-  return r; // tamanho real interno
+function loadHTML(html, frame) {
+  return new Promise(resolve => {
+    const blob = new Blob([html], { type: 'text/html' });
+    const url  = URL.createObjectURL(blob);
+    frame.src  = url;
+    frame.onload = () => { URL.revokeObjectURL(url); resolve(); };
+    setTimeout(() => { URL.revokeObjectURL(url); resolve(); }, 6000);
+  });
 }
 
 // ── Pré-visualizar ───────────────────────────────────────
-bpvEl.onclick = () => {
+bpvEl.onclick = async () => {
   const html = hiEl.value.trim();
   if (!html) { addLog('⚠ Cole um HTML primeiro!', 'w'); return; }
-  clearLog(); addLog('// Renderizando preview...', 'i');
+  clearLog(); addLog('// Carregando preview...', 'i');
   bpvEl.disabled = true;
-
   const r = parseInt(resEl.value);
-  setupRenderArea(r);
-  injectHTML(html, ra);
-
+  await loadHTML(html, previewIf);
+  scaleIframe(r);
   ov0.classList.add('h');
   brecEl.disabled = false;
   bpvEl.disabled  = false;
@@ -270,7 +259,7 @@ bpvEl.onclick = () => {
 brecEl.onclick = async () => {
   const html    = hiEl.value.trim();
   const durSec  = parseInt(durEl.value);
-  const fpsNum  = parseInt(fpsEl.value);
+  const fpsOut  = parseInt(fpsEl.value);
   const r       = parseInt(resEl.value);
   const bitrate = parseInt(qualEl.value);
 
@@ -281,144 +270,152 @@ brecEl.onclick = async () => {
   clearLog();
   ov1.classList.remove('h');
   pgfEl.style.width = '0%';
-  rstEl.textContent = 'Preparando...';
-  tcEl.textContent  = `0s / ${durSec}s`;
+  rstEl.textContent = 'Preparando iframe...';
+  tcEl.textContent  = `0.0s / ${durSec}s`;
+  fpsBadge.textContent = '— fps capturados';
 
-  addLog(`// Configuração: ${r}×${r} | ${fpsNum}fps | ${durSec}s`, 'i');
+  addLog(`// Iniciando: ${r}×${r} | saída ${fpsOut}fps | ${durSec}s`, 'i');
 
-  // ── 1. Injeta HTML em tamanho real (fora do viewport) ─
-  // Cria um container absoluto no tamanho exato para captura
-  const captureHost = document.createElement('div');
-  Object.assign(captureHost.style, {
-    position: 'fixed',
-    top: '0', left: '0',
+  // ── 1. Iframe oculto no tamanho exato ───────────────
+  const capIframe = document.createElement('iframe');
+  Object.assign(capIframe.style, {
+    position: 'fixed', top: '0', left: '0',
     width: r + 'px', height: r + 'px',
-    zIndex: '-9999',
-    overflow: 'hidden',
-    opacity: '0.001',
-    pointerEvents: 'none',
+    border: 'none', zIndex: '-9999',
+    opacity: '0.001', pointerEvents: 'none',
   });
-  document.body.appendChild(captureHost);
-  injectHTML(html, captureHost);
+  capIframe.setAttribute('sandbox', 'allow-scripts allow-same-origin');
+  document.body.appendChild(capIframe);
 
-  // Também atualiza o preview visível
-  setupRenderArea(r);
-  injectHTML(html, ra);
+  rstEl.textContent = 'Carregando HTML...';
+  await loadHTML(html, capIframe);
 
-  addLog('// HTML injetado. Aguardando animações (1.5s)...', 'i');
+  // Atualiza preview também
+  await loadHTML(html, previewIf);
+  scaleIframe(r);
+
   rstEl.textContent = 'Aguardando animações...';
+  addLog('// Aguardando animações (1.5s)...', 'i');
   await new Promise(res => setTimeout(res, 1500));
 
-  // ── 2. Setup canvas de captura ──────────────────────
-  cc.width  = r;
-  cc.height = r;
-  const ctx = cc.getContext('2d', { willReadFrequently: true });
+  // ── 2. Canvas de captura ─────────────────────────────
+  recCv.width  = r;
+  recCv.height = r;
+  const ctx = recCv.getContext('2d');
+  recCv.style.display = 'none';
 
-  // captureStream no canvas
-  const stream = cc.captureStream(fpsNum);
-  addLog(`// Stream: ${stream.getVideoTracks().length} track(s) de vídeo`, 'i');
-
-  // ── 3. Loop de captura: copia captureHost → canvas ──
-  // Usamos html2canvas só para copiar o conteúdo renderizado
-  // SEM carregar o html2canvas via CDN — usamos a API nativa
-  // A sacada: desenhamos o captureHost usando drawImage + element capture
-
-  let capturing = true;
-  let frameCount = 0;
-
-  // Método principal: tenta usar ImageBitmap do elemento
-  const renderFrame = async () => {
-    if (!capturing) return;
-    try {
-      // Tenta criar ImageBitmap do container de captura
-      const bitmap = await createImageBitmap(captureHost);
-      ctx.clearRect(0, 0, r, r);
-      ctx.drawImage(bitmap, 0, 0, r, r);
-      bitmap.close();
-    } catch(e) {
-      // Se falhar, espelha o preview area visível
-      try {
-        const bitmap2 = await createImageBitmap(ra);
-        ctx.clearRect(0, 0, r, r);
-        ctx.drawImage(bitmap2, 0, 0, r, r);
-        bitmap2.close();
-      } catch(e2) {
-        // Fallback: pinta fundo sólido (indica que captura não suportada)
-        ctx.fillStyle = '#0a0a0f';
-        ctx.fillRect(0, 0, r, r);
-        ctx.fillStyle = 'rgba(91,110,245,0.5)';
-        ctx.font = `${r/20}px sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.fillText('Gravando...', r/2, r/2);
-      }
-    }
-    frameCount++;
-    if (capturing) requestAnimationFrame(renderFrame);
-  };
-
-  requestAnimationFrame(renderFrame);
-
-  // ── 4. MediaRecorder ────────────────────────────────
+  // ── 3. Stream e MediaRecorder ────────────────────────
+  const stream = recCv.captureStream(fpsOut);
   const mimeType = ['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm']
     .find(m => MediaRecorder.isTypeSupported(m)) || 'video/webm';
   addLog(`// Codec: ${mimeType}`, 'i');
 
   const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: bitrate });
   const chunks   = [];
-
   recorder.ondataavailable = e => { if (e.data?.size > 0) chunks.push(e.data); };
-  recorder.onstop = () => {
-    capturing = false;
-    stream.getTracks().forEach(t => t.stop());
 
-    // Remove container de captura
-    if (captureHost.parentNode) captureHost.parentNode.removeChild(captureHost);
+  recorder.onstop = () => {
+    stream.getTracks().forEach(t => t.stop());
+    if (capIframe.parentNode) capIframe.parentNode.removeChild(capIframe);
 
     const blob   = new Blob(chunks, { type: mimeType });
     const url    = URL.createObjectURL(blob);
     const sizeMB = (blob.size / 1024 / 1024).toFixed(2);
 
     dlEl.href     = url;
-    dlEl.download = `animacao-${durSec}s-${fpsNum}fps.webm`;
+    dlEl.download = `animacao-${durSec}s.webm`;
     daEl.classList.remove('h');
     ov1.classList.add('h');
     brecEl.disabled = bpvEl.disabled = false;
-
-    addLog(`✓ Pronto! ${sizeMB} MB | ${durSec}s | ${frameCount} frames renderizados`, 'ok');
+    addLog(`✓ Pronto! ${sizeMB} MB | ${durSec}s | ${capturedFrames} frames`, 'ok');
   };
 
-  recorder.start(100);
-  rstEl.textContent = '⏺ Gravando em tempo real...';
-  addLog(`⏺ Gravando ${durSec}s...`, 'ok');
+  // ── 4. Loop de captura em paralelo com o timer ───────
+  // A chave: o loop roda o mais rápido possível.
+  // O timer controla quando parar — não o número de frames.
+  let capturing = true;
+  let capturedFrames = 0;
+  let lastFpsCalc = Date.now();
+  let framesInLastSec = 0;
 
-  // ── 5. Timer / progresso ────────────────────────────
+  const captureLoop = async () => {
+    while (capturing) {
+      try {
+        const capDoc = capIframe.contentDocument;
+        if (capDoc && capDoc.documentElement) {
+          // html2canvas captura o iframe
+          const canvas = await html2canvas(capDoc.documentElement, {
+            canvas: recCv,          // desenha direto no recCv
+            width:  r,
+            height: r,
+            scale:  1,
+            useCORS:      true,
+            allowTaint:   true,
+            backgroundColor: null,
+            logging:      false,
+            windowWidth:  r,
+            windowHeight: r,
+          });
+
+          // Se html2canvas devolveu canvas diferente, copia
+          if (canvas !== recCv) {
+            ctx.drawImage(canvas, 0, 0, r, r);
+          }
+
+          capturedFrames++;
+          framesInLastSec++;
+
+          // Atualiza badge de fps a cada segundo
+          const now = Date.now();
+          if (now - lastFpsCalc >= 1000) {
+            fpsBadge.textContent = `${framesInLastSec} fps capturados`;
+            framesInLastSec = 0;
+            lastFpsCalc = now;
+          }
+        }
+      } catch(e) {
+        // Se html2canvas falhar num frame, pula
+      }
+
+      // Yield para não travar o navegador
+      await new Promise(r => setTimeout(r, 0));
+    }
+  };
+
+  // ── 5. Inicia tudo ───────────────────────────────────
+  recorder.start(100);
+  addLog(`⏺ Gravando ${durSec}s em tempo real...`, 'ok');
+  rstEl.textContent = '⏺ Gravando...';
+
+  // Timer de progresso
   const t0 = Date.now();
   const tick = setInterval(() => {
     const elapsed = (Date.now() - t0) / 1000;
     const pct     = Math.min(100, (elapsed / durSec) * 100);
-    const left    = Math.max(0, durSec - elapsed).toFixed(1);
-    pgfEl.style.width  = pct + '%';
-    tcEl.textContent   = `${elapsed.toFixed(1)}s / ${durSec}s`;
-    rdetEl.textContent = `${left}s restantes`;
+    pgfEl.style.width = pct + '%';
+    tcEl.textContent  = `${elapsed.toFixed(1)}s / ${durSec}s`;
   }, 100);
 
-  // ── 6. Para no tempo exato ──────────────────────────
+  // Loop de captura roda em paralelo
+  captureLoop();
+
+  // Para exatamente após durSec segundos
   setTimeout(() => {
-    clearInterval(tick);
     capturing = false;
+    clearInterval(tick);
     pgfEl.style.width = '100%';
     rstEl.textContent = 'Finalizando...';
-    recorder.stop();
-    addLog('// Encerrando gravação...', 'i');
+    addLog('// Finalizando...', 'i');
+    // Pequena pausa para o último frame ser processado
+    setTimeout(() => recorder.stop(), 300);
   }, durSec * 1000);
 };
 
 window.addEventListener('resize', () => {
-  if (ov0.classList.contains('h')) {
-    const r = parseInt(resEl.value);
-    setupRenderArea(r);
-  }
+  if (!ov0.classList.contains('h')) return;
+  scaleIframe(parseInt(resEl.value));
 });
+scaleIframe(540);
 </script>
 </body>
 </html>

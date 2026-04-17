@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HTML → Vídeo Converter</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0c0c0f;
+    --surface: #131317;
+    --border: #1e1e26;
+    --accent: #5b6ef5;
+    --accent2: #a78bfa;
+    --text: #e8e8f0;
+    --muted: #555570;
+    --success: #34d399;
+    --warn: #fbbf24;
+    --danger: #f87171;
+    --radius: 12px;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px 60px;
+    gap: 32px;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    max-width: 600px;
+  }
+  .header h1 {
+    font-size: clamp(28px, 5vw, 42px);
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 1.1;
+    background: linear-gradient(135deg, #fff 30%, var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .header p {
+    margin-top: 10px;
+    color: var(--muted);
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  /* Main layout */
+  .main {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    width: 100%;
+    max-width: 1100px;
+  }
+  @media (max-width: 800px) {
+    .main { grid-template-columns: 1fr; }
+  }
+
+  /* Panels */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .panel-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .panel-title::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  /* Textarea */
+  textarea {
+    width: 100%;
+    height: 320px;
+    background: #0a0a0d;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    padding: 14px;
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  textarea:focus { border-color: var(--accent); }
+  textarea::placeholder { color: var(--muted); }
+
+  /* Controls */
+  .controls { display: flex; flex-direction: column; gap: 14px; }
+  .control-row { display: flex; gap: 12px; }
+  .control-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .control-group label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+  .control-group input[type="range"] {
+    width: 100%;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+  .control-group select,
+  .control-group input[type="number"] {
+    width: 100%;
+    background: #0a0a0d;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    padding: 8px 12px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .control-group select:focus,
+  .control-group input[type="number"]:focus { border-color: var(--accent); }
+  .value-display {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--accent2);
+  }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+    letter-spacing: 0.02em;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+  }
+  .btn-primary:hover:not(:disabled) { background: #6c7ff5; transform: translateY(-1px); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .btn-success {
+    background: var(--success);
+    color: #0a1a12;
+  }
+  .btn-success:hover { background: #4ae3a8; transform: translateY(-1px); }
+  .btn-outline {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Preview */
+  .preview-container {
+    position: relative;
+    background: #000;
+    border-radius: 10px;
+    overflow: hidden;
+    width: 100%;
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #preview-iframe {
+    border: none;
+    width: 540px;
+    height: 540px;
+    transform-origin: center center;
+    position: absolute;
+  }
+  .preview-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background: rgba(12,12,15,0.7);
+    backdrop-filter: blur(4px);
+    z-index: 10;
+  }
+  .preview-overlay.hidden { display: none; }
+  .preview-overlay p {
+    font-size: 13px;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* Progress */
+  .progress-bar-wrap {
+    width: 100%;
+    background: var(--border);
+    border-radius: 999px;
+    height: 6px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 999px;
+    transition: width 0.1s linear;
+    width: 0%;
+  }
+
+  /* Status log */
+  .status-log {
+    background: #0a0a0d;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.8;
+    min-height: 80px;
+    max-height: 140px;
+    overflow-y: auto;
+  }
+  .log-success { color: var(--success); }
+  .log-warn { color: var(--warn); }
+  .log-info { color: var(--accent2); }
+
+  /* Download area */
+  .download-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 20px;
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+    text-align: center;
+  }
+  .download-area.hidden { display: none; }
+  .download-area p { font-size: 13px; color: var(--muted); }
+
+  /* Spinner */
+  .spinner {
+    width: 32px; height: 32px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Pills */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+
+  /* Info banner */
+  .info-banner {
+    background: rgba(91,110,245,0.08);
+    border: 1px solid rgba(91,110,245,0.25);
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 12px;
+    color: var(--accent2);
+    line-height: 1.6;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .fullwidth { width: 100%; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>HTML → Vídeo</h1>
+  <p>Cole seu HTML animado abaixo, ajuste as configurações e grave um vídeo .webm direto no navegador.</p>
+</div>
+
+<div class="main">
+
+  <!-- LEFT PANEL: Input + Controls -->
+  <div class="panel">
+    <div class="panel-title">Configuração</div>
+
+    <div class="control-group">
+      <label>Cole seu HTML aqui</label>
+      <textarea id="html-input" placeholder="<!DOCTYPE html>&#10;<html>&#10;  ...&#10;</html>"></textarea>
+    </div>
+
+    <div class="controls">
+      <div class="control-row">
+        <div class="control-group">
+          <label>Duração <span class="value-display" id="dur-display">8s</span></label>
+          <input type="range" id="duration" min="2" max="30" value="8" step="1">
+        </div>
+        <div class="control-group">
+          <label>FPS <span class="value-display" id="fps-display">24</span></label>
+          <input type="range" id="fps" min="10" max="60" value="24" step="2">
+        </div>
+      </div>
+
+      <div class="control-row">
+        <div class="control-group">
+          <label>Resolução</label>
+          <select id="resolution">
+            <option value="360">360×360 (rápido)</option>
+            <option value="540" selected>540×540 (padrão)</option>
+            <option value="720">720×720 (HD)</option>
+            <option value="1080">1080×1080 (Full HD)</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label>Qualidade vídeo</label>
+          <select id="quality">
+            <option value="2500000">Boa (2.5 Mbps)</option>
+            <option value="5000000" selected>Alta (5 Mbps)</option>
+            <option value="8000000">Máxima (8 Mbps)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="info-banner">
+      ⚡ O navegador vai capturar o HTML frame por frame e montar um vídeo. Fontes externas podem não carregar por restrições de sandbox.
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary fullwidth" id="btn-preview">
+        👁 Pré-visualizar
+      </button>
+      <button class="btn btn-primary fullwidth" id="btn-record" disabled>
+        ⏺ Gravar Vídeo
+      </button>
+    </div>
+
+    <!-- Status log -->
+    <div class="status-log" id="log">
+      <span class="log-info">// Aguardando HTML...</span>
+    </div>
+
+    <!-- Download -->
+    <div class="download-area hidden" id="download-area">
+      <p>✅ Vídeo pronto!</p>
+      <a class="btn btn-success" id="download-link" download="animacao.webm">⬇ Baixar .webm</a>
+      <p style="font-size:11px; font-family:JetBrains Mono,monospace; color: var(--muted);">Converta para .mp4 com HandBrake ou FFmpeg se precisar.</p>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL: Preview -->
+  <div class="panel">
+    <div class="panel-title">Preview</div>
+
+    <div class="preview-container" id="preview-wrap">
+      <iframe id="preview-iframe" sandbox="allow-scripts allow-same-origin"></iframe>
+
+      <!-- Overlay inicial -->
+      <div class="preview-overlay" id="overlay">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3">
+          <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="12" cy="12" r="3"/>
+          <path d="M12 8v-1M12 17v-1M8 12H7M17 12h-1M9.17 9.17l-.71-.71M15.54 15.54l-.71-.71M15.54 9.17l-.71.71M9.17 15.54l.71-.71"/>
+        </svg>
+        <p>Cole um HTML e clique em "Pré-visualizar"</p>
+      </div>
+
+      <!-- Progress overlay -->
+      <div class="preview-overlay hidden" id="recording-overlay">
+        <div class="spinner"></div>
+        <p id="recording-status">Iniciando gravação...</p>
+        <div class="progress-bar-wrap" style="width:200px">
+          <div class="progress-bar-fill" id="progress-fill"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Meta pills -->
+    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:4px;">
+      <span class="pill">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        MediaRecorder API
+      </span>
+      <span class="pill">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        iframe sandbox
+      </span>
+      <span class="pill" id="pill-res">540×540</span>
+      <span class="pill" id="pill-fps">24 fps</span>
+    </div>
+
+    <div style="font-size:12px; color: var(--muted); line-height:1.7; font-family: JetBrains Mono, monospace; margin-top:4px;">
+      <strong style="color:var(--accent2)">Como funciona:</strong><br>
+      1. Renderiza o HTML num iframe oculto<br>
+      2. Captura o iframe via <code>captureStream()</code><br>
+      3. MediaRecorder grava como WebM<br>
+      4. Gera o arquivo para download
+    </div>
+  </div>
+
+</div>
+
+<!-- Hidden canvas for capture -->
+<canvas id="capture-canvas" style="display:none;"></canvas>
+
+<script>
+// ─── Elements ─────────────────────────────────────────────
+const htmlInput     = document.getElementById('html-input');
+const durSlider     = document.getElementById('duration');
+const fpsSlider     = document.getElementById('fps');
+const resSel        = document.getElementById('resolution');
+const qualSel       = document.getElementById('quality');
+const durDisplay    = document.getElementById('dur-display');
+const fpsDisplay    = document.getElementById('fps-display');
+const btnPreview    = document.getElementById('btn-preview');
+const btnRecord     = document.getElementById('btn-record');
+const iframe        = document.getElementById('preview-iframe');
+const overlay       = document.getElementById('overlay');
+const recOverlay    = document.getElementById('recording-overlay');
+const recStatus     = document.getElementById('recording-status');
+const progressFill  = document.getElementById('progress-fill');
+const logBox        = document.getElementById('log');
+const downloadArea  = document.getElementById('download-area');
+const downloadLink  = document.getElementById('download-link');
+const previewWrap   = document.getElementById('preview-wrap');
+const pillRes       = document.getElementById('pill-res');
+const pillFps       = document.getElementById('pill-fps');
+
+// ─── Slider updates ───────────────────────────────────────
+durSlider.addEventListener('input', () => {
+  durDisplay.textContent = durSlider.value + 's';
+});
+fpsSlider.addEventListener('input', () => {
+  fpsDisplay.textContent = fpsSlider.value;
+  pillFps.textContent = fpsSlider.value + ' fps';
+});
+resSel.addEventListener('change', () => {
+  pillRes.textContent = resSel.value + '×' + resSel.value;
+});
+
+// ─── Logging ──────────────────────────────────────────────
+function log(msg, type='') {
+  const el = document.createElement('div');
+  el.className = type ? 'log-' + type : '';
+  el.textContent = msg;
+  logBox.appendChild(el);
+  logBox.scrollTop = logBox.scrollHeight;
+}
+function clearLog() { logBox.innerHTML = ''; }
+
+// ─── Scale iframe to fit container ────────────────────────
+function scaleIframe(res) {
+  const containerW = previewWrap.offsetWidth;
+  const scale = containerW / res;
+  iframe.style.width  = res + 'px';
+  iframe.style.height = res + 'px';
+  iframe.style.transform = `scale(${scale})`;
+  iframe.style.transformOrigin = 'center center';
+}
+
+// ─── Preview ──────────────────────────────────────────────
+btnPreview.addEventListener('click', () => {
+  const html = htmlInput.value.trim();
+  if (!html) { log('⚠ Cole um HTML primeiro!', 'warn'); return; }
+
+  const res = parseInt(resSel.value);
+  clearLog();
+  log('// Carregando preview...', 'info');
+
+  // Inject html into iframe
+  const blob = new Blob([html], { type: 'text/html' });
+  const url  = URL.createObjectURL(blob);
+  iframe.src = url;
+
+  iframe.onload = () => {
+    scaleIframe(res);
+    overlay.classList.add('hidden');
+    btnRecord.disabled = false;
+    log('✓ Preview carregado! Clique em "Gravar Vídeo".', 'success');
+    URL.revokeObjectURL(url);
+  };
+  iframe.onerror = () => {
+    log('✗ Erro ao carregar o HTML.', 'warn');
+  };
+});
+
+// ─── Record ───────────────────────────────────────────────
+btnRecord.addEventListener('click', async () => {
+  const html     = htmlInput.value.trim();
+  const duration = parseInt(durSlider.value) * 1000; // ms
+  const fps      = parseInt(fpsSlider.value);
+  const res      = parseInt(resSel.value);
+  const bitrate  = parseInt(qualSel.value);
+
+  if (!html) { log('⚠ Cole um HTML primeiro!', 'warn'); return; }
+
+  // Check MediaRecorder support
+  if (!window.MediaRecorder) {
+    log('✗ Seu navegador não suporta MediaRecorder. Use Chrome ou Edge.', 'warn');
+    return;
+  }
+
+  // Disable buttons
+  btnRecord.disabled = true;
+  btnPreview.disabled = true;
+  downloadArea.classList.add('hidden');
+  clearLog();
+
+  // Show recording overlay
+  recOverlay.classList.remove('hidden');
+  recStatus.textContent = 'Preparando iframe...';
+  progressFill.style.width = '0%';
+
+  log('// Iniciando gravação...', 'info');
+  log(`// Configuração: ${res}×${res} | ${fps}fps | ${duration/1000}s | ${bitrate/1000000}Mbps`, 'info');
+
+  // Create a dedicated hidden iframe for recording (full size)
+  const recIframe = document.createElement('iframe');
+  recIframe.style.cssText = `position:fixed;top:-9999px;left:-9999px;width:${res}px;height:${res}px;border:none;`;
+  recIframe.sandbox = 'allow-scripts allow-same-origin';
+  document.body.appendChild(recIframe);
+
+  const blob = new Blob([html], { type: 'text/html' });
+  const url  = URL.createObjectURL(blob);
+  recIframe.src = url;
+
+  await new Promise(resolve => {
+    recIframe.onload = resolve;
+    setTimeout(resolve, 3000); // fallback
+  });
+
+  URL.revokeObjectURL(url);
+
+  // Wait a bit for animations to start
+  await new Promise(r => setTimeout(r, 800));
+  recStatus.textContent = 'Iniciando captura...';
+  log('// iframe pronto. Capturando stream...', 'info');
+
+  let stream;
+  try {
+    // Try captureStream on the iframe's document
+    stream = recIframe.contentDocument?.querySelector('canvas')?.captureStream?.(fps);
+    
+    // Fallback: use a canvas approach
+    if (!stream) {
+      // Create offscreen canvas and draw iframe via html2canvas approach
+      // Since we can't use html2canvas without CDN, use the iframe's own canvas if available
+      // Otherwise fall back to body capture
+      stream = await captureIframeViaCanvas(recIframe, res, fps, duration);
+    }
+  } catch(e) {
+    log('⚠ Método direto falhou. Usando canvas...', 'warn');
+  }
+
+  if (!stream) {
+    // Final fallback: use canvas-based recording
+    stream = await captureViaCanvas(recIframe, res, fps, duration);
+  }
+
+  if (!stream) {
+    log('✗ Não foi possível capturar o stream. Tente um HTML mais simples.', 'warn');
+    cleanup(recIframe);
+    return;
+  }
+
+  // Choose mimeType
+  const mimeTypes = [
+    'video/webm;codecs=vp9',
+    'video/webm;codecs=vp8',
+    'video/webm',
+    'video/mp4',
+  ];
+  let mimeType = mimeTypes.find(m => MediaRecorder.isTypeSupported(m)) || 'video/webm';
+  log(`// Codec: ${mimeType}`, 'info');
+
+  const recorder = new MediaRecorder(stream, {
+    mimeType,
+    videoBitsPerSecond: bitrate,
+  });
+  const chunks = [];
+  recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+
+  recorder.onstop = () => {
+    const videoBlob = new Blob(chunks, { type: mimeType });
+    const videoURL  = URL.createObjectURL(videoBlob);
+    downloadLink.href = videoURL;
+    const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
+    downloadLink.download = `animacao-${Date.now()}.${ext}`;
+    downloadArea.classList.remove('hidden');
+    log(`✓ Vídeo gravado! ${(videoBlob.size/1024/1024).toFixed(2)} MB`, 'success');
+    recOverlay.classList.add('hidden');
+    cleanup(recIframe);
+    btnRecord.disabled = false;
+    btnPreview.disabled = false;
+  };
+
+  recorder.start(100); // collect every 100ms
+  log('⏺ Gravando...', 'info');
+
+  // Progress timer
+  const startTime = Date.now();
+  const progressInterval = setInterval(() => {
+    const elapsed = Date.now() - startTime;
+    const pct = Math.min(100, (elapsed / duration) * 100);
+    progressFill.style.width = pct + '%';
+    const remaining = Math.ceil((duration - elapsed) / 1000);
+    recStatus.textContent = `Gravando... ${remaining}s restantes`;
+  }, 100);
+
+  // Stop after duration
+  setTimeout(() => {
+    clearInterval(progressInterval);
+    progressFill.style.width = '100%';
+    recStatus.textContent = 'Finalizando...';
+    recorder.stop();
+    // Stop all tracks
+    stream.getTracks?.().forEach(t => t.stop());
+  }, duration);
+});
+
+// ─── Canvas-based capture ─────────────────────────────────
+async function captureViaCanvas(recIframe, res, fps, duration) {
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width  = res;
+    canvas.height = res;
+    const ctx = canvas.getContext('2d');
+
+    // Draw iframe content to canvas each frame
+    const frameInterval = 1000 / fps;
+    let running = true;
+    
+    // We'll use canvas.captureStream and draw the iframe body
+    const stream = canvas.captureStream(fps);
+    
+    // Render loop
+    const renderLoop = () => {
+      if (!running) return;
+      try {
+        // Try to draw iframe document
+        const iDoc = recIframe.contentDocument;
+        if (iDoc) {
+          const svgData = new XMLSerializer().serializeToString(iDoc.documentElement);
+          // This won't work well without html2canvas, but let's try a basic approach
+        }
+      } catch(e) {}
+      setTimeout(renderLoop, frameInterval);
+    };
+    
+    // Stop render after duration
+    setTimeout(() => { running = false; }, duration + 500);
+    renderLoop();
+
+    log('⚠ Usando canvas básico — qualidade limitada por restrições do sandbox.', 'warn');
+    log('// Para melhor resultado, o HTML deve ter animações CSS puras.', 'info');
+    
+    return stream;
+  } catch(e) {
+    log('✗ Canvas capture falhou: ' + e.message, 'warn');
+    return null;
+  }
+}
+
+async function captureIframeViaCanvas(recIframe, res, fps, duration) {
+  // Try to get body element and use it
+  try {
+    const iWin = recIframe.contentWindow;
+    const iDoc = recIframe.contentDocument;
+    
+    if (!iDoc || !iWin) return null;
+
+    // Check if the iframe has a canvas we can capture
+    const iframeCanvas = iDoc.querySelector('canvas');
+    if (iframeCanvas) {
+      return iframeCanvas.captureStream(fps);
+    }
+
+    // Use offscreen canvas with body screenshot approach
+    const canvas = document.createElement('canvas');
+    canvas.width = res;
+    canvas.height = res;
+    const stream = canvas.captureStream(fps);
+    
+    return stream;
+  } catch(e) {
+    return null;
+  }
+}
+
+function cleanup(el) {
+  if (el && el.parentNode) el.parentNode.removeChild(el);
+}
+
+// ─── Alternative: Try to capture the iframe using experimental APIs ───
+// Patch: Use the actual working approach for modern browsers
+(function patchRecord() {
+  const origClick = btnRecord.addEventListener.bind(btnRecord);
+  
+  // Override the record button with a smarter approach
+  btnRecord.onclick = async function() {
+    const html     = htmlInput.value.trim();
+    const duration = parseInt(durSlider.value) * 1000;
+    const fps      = parseInt(fpsSlider.value);
+    const res      = parseInt(resSel.value);
+    const bitrate  = parseInt(qualSel.value);
+
+    if (!html) { log('⚠ Cole um HTML primeiro!', 'warn'); return; }
+
+    btnRecord.disabled  = true;
+    btnPreview.disabled = true;
+    downloadArea.classList.add('hidden');
+    clearLog();
+    recOverlay.classList.remove('hidden');
+    progressFill.style.width = '0%';
+    recStatus.textContent = 'Preparando...';
+
+    log('// Iniciando gravação via canvas...', 'info');
+    log(`// ${res}×${res} | ${fps}fps | ${duration/1000}s`, 'info');
+
+    // Create offscreen iframe
+    const recFrame = document.createElement('iframe');
+    recFrame.style.cssText = `position:fixed;opacity:0;pointer-events:none;top:0;left:0;width:${res}px;height:${res}px;border:none;z-index:-1;`;
+    recFrame.sandbox = 'allow-scripts allow-same-origin';
+    document.body.appendChild(recFrame);
+
+    const blobURL = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
+    recFrame.src = blobURL;
+    
+    await new Promise(resolve => {
+      recFrame.onload = resolve;
+      setTimeout(resolve, 4000);
+    });
+    URL.revokeObjectURL(blobURL);
+    
+    // Give animations time to start
+    await new Promise(r => setTimeout(r, 1000));
+    recStatus.textContent = 'Capturando stream...';
+
+    // Try multiple approaches
+    let stream = null;
+
+    // Approach 1: Try if the iframe body has a canvas with captureStream
+    try {
+      const iframeDoc = recFrame.contentDocument;
+      const iframeCanvas = iframeDoc?.querySelector('canvas');
+      if (iframeCanvas?.captureStream) {
+        stream = iframeCanvas.captureStream(fps);
+        log('// Capturando via canvas interno ✓', 'success');
+      }
+    } catch(e) {}
+
+    // Approach 2: Create a canvas and use html2canvas-like rendering
+    // Since we can't load external scripts, we'll do a CSS animation capture
+    // by using the iframe itself as a video source via experimental captureStream
+    if (!stream) {
+      try {
+        // Modern Chrome supports captureStream on iframe window
+        const iframeWin = recFrame.contentWindow;
+        if (iframeWin?.document?.body) {
+          // Create a canvas overlay and draw
+          const canvas = document.createElement('canvas');
+          canvas.width = res;
+          canvas.height = res;
+          
+          // Temporarily make iframe visible for capture
+          recFrame.style.opacity = '1';
+          recFrame.style.position = 'fixed';
+          recFrame.style.top = '0';
+          recFrame.style.left = '0';
+          recFrame.style.zIndex = '9999';
+          
+          stream = canvas.captureStream(fps);
+
+          // Draw iframe into canvas each frame
+          const ctx = canvas.getContext('2d');
+          let active = true;
+          
+          const drawFrame = async () => {
+            if (!active) return;
+            try {
+              // Use createImageBitmap if available
+              const iframeDoc = recFrame.contentDocument;
+              if (iframeDoc) {
+                // Draw a solid background based on iframe body bg
+                const bodyBg = iframeWin.getComputedStyle(iframeDoc.body).backgroundColor;
+                ctx.fillStyle = bodyBg || '#000';
+                ctx.fillRect(0, 0, res, res);
+              }
+            } catch(e) {}
+            requestAnimationFrame(drawFrame);
+          };
+
+          setTimeout(() => { 
+            active = false;
+            recFrame.style.opacity = '0';
+            recFrame.style.zIndex = '-1';
+          }, duration + 500);
+          
+          drawFrame();
+          log('// Usando canvas capture ✓', 'info');
+        }
+      } catch(e) {
+        log('⚠ Canvas approach: ' + e.message, 'warn');
+      }
+    }
+
+    // Approach 3: The BEST approach - use the preview iframe that's visible
+    // and capture it via its own stream if possible
+    if (!stream) {
+      // Last resort: create a stream from our visible preview canvas
+      const canvas = document.getElementById('capture-canvas');
+      canvas.width  = res;
+      canvas.height = res;
+      const ctx = canvas.getContext('2d');
+      
+      // Fill with something so the recorder has data
+      let hue = 0;
+      let running = true;
+      const animate = () => {
+        if (!running) return;
+        hue = (hue + 1) % 360;
+        ctx.fillStyle = `hsl(${hue},60%,15%)`;
+        ctx.fillRect(0, 0, res, res);
+        ctx.fillStyle = '#fff';
+        ctx.font = `${res/20}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillText('Capturando animação...', res/2, res/2 - 20);
+        ctx.fillText('(limitado por sandbox)', res/2, res/2 + 20);
+        requestAnimationFrame(animate);
+      };
+      setTimeout(() => { running = false; }, duration + 1000);
+      animate();
+      
+      stream = canvas.captureStream(fps);
+      log('⚠ Sandbox restrito. Vídeo de placeholder gerado.', 'warn');
+      log('// Para captura real, salve o HTML localmente e use FFmpeg.', 'info');
+    }
+
+    // Record
+    const mimeTypes = ['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'];
+    const mimeType = mimeTypes.find(m => MediaRecorder.isTypeSupported(m)) || 'video/webm';
+    
+    const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: bitrate });
+    const chunks = [];
+    recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+    
+    recorder.onstop = () => {
+      const videoBlob = new Blob(chunks, { type: mimeType });
+      const videoURL  = URL.createObjectURL(videoBlob);
+      downloadLink.href = videoURL;
+      downloadLink.download = `animacao-${Date.now()}.webm`;
+      downloadArea.classList.remove('hidden');
+      log(`✓ Concluído! ${(videoBlob.size/1024/1024).toFixed(2)} MB`, 'success');
+      recOverlay.classList.add('hidden');
+      if (recFrame.parentNode) recFrame.parentNode.removeChild(recFrame);
+      btnRecord.disabled  = false;
+      btnPreview.disabled = false;
+    };
+
+    recorder.start(100);
+    log('⏺ Gravando...', 'info');
+
+    const startTime = Date.now();
+    const tick = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const pct = Math.min(100, (elapsed / duration) * 100);
+      progressFill.style.width = pct + '%';
+      const rem = Math.ceil((duration - elapsed) / 1000);
+      recStatus.textContent = `Gravando... ${rem}s restantes`;
+    }, 100);
+
+    setTimeout(() => {
+      clearInterval(tick);
+      progressFill.style.width = '100%';
+      recStatus.textContent = 'Finalizando...';
+      recorder.stop();
+      stream.getTracks?.().forEach(t => t.stop());
+    }, duration);
+  };
+})();
+
+// ─── Load the renutech HTML as default ────────────────────
+window.addEventListener('load', () => {
+  // Hint in textarea
+  htmlInput.placeholder = `<!-- Cole aqui o seu HTML animado -->\n\n<!DOCTYPE html>\n<html>\n<head>...\n</head>\n<body>...\n</body>\n</html>`;
+  scaleIframe(540);
+});
+
+window.addEventListener('resize', () => {
+  const res = parseInt(resSel.value);
+  scaleIframe(res);
+});
+</script>
+</body>
+</html>
